@@ -1,14 +1,15 @@
 import { getDatabase } from "../../../db";
 
 const CARD_COUNT = 24;
+export const dynamic = "force-dynamic";
 function errorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unexpected error";
-  return message.includes("no such table") ? "The shared gallery is warming up. Please try again in a moment." : message;
+  if (error instanceof Error && error.message.includes("not configured")) return "The shared gallery is being configured. Please try again in a moment.";
+  return "The shared gallery is temporarily unavailable. Please try again in a moment.";
 }
 export async function GET() {
   try {
-    const results = await getDatabase().prepare("SELECT id, name, card_id AS cardId, answer, created_at AS createdAt FROM interpretations ORDER BY id DESC LIMIT 60").all();
-    return Response.json({ entries: results.results });
+    const results = await getDatabase().query("SELECT id, name, card_id AS \"cardId\", answer, created_at AS \"createdAt\" FROM interpretations ORDER BY id DESC LIMIT 60");
+    return Response.json({ entries: results.rows });
   } catch (error) { return Response.json({ error: errorMessage(error) }, { status: 500 }); }
 }
 export async function POST(request: Request) {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     const cardId = typeof body.cardId === "number" ? body.cardId : -1;
     if (!name || !answer || cardId < 0 || cardId >= CARD_COUNT || !Number.isInteger(cardId)) return Response.json({ error: "Please add your name and a short interpretation." }, { status: 400 });
     if (name.length > 60 || answer.length > 600) return Response.json({ error: "Please keep your response a little shorter." }, { status: 400 });
-    const saved = await getDatabase().prepare("INSERT INTO interpretations (name, card_id, answer) VALUES (?, ?, ?) RETURNING id, name, card_id AS cardId, answer, created_at AS createdAt").bind(name, cardId, answer).first();
-    return Response.json({ entry: saved }, { status: 201 });
+    const saved = await getDatabase().query("INSERT INTO interpretations (name, card_id, answer) VALUES ($1, $2, $3) RETURNING id, name, card_id AS \"cardId\", answer, created_at AS \"createdAt\"", [name, cardId, answer]);
+    return Response.json({ entry: saved.rows[0] }, { status: 201 });
   } catch (error) { return Response.json({ error: errorMessage(error) }, { status: 500 }); }
 }

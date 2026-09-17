@@ -1,6 +1,9 @@
-import { env } from "cloudflare:workers";
+import { Pool } from "pg";
 
+let database: Pool | undefined;
 export function getDatabase() {
-  if (!env.DB) throw new Error("The shared gallery is temporarily unavailable.");
-  return env.DB;
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("The shared gallery database is not configured.");
+  database ??= new Pool({ connectionString });
+  return database;
 }
