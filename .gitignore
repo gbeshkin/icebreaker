@@ -1,0 +1,16 @@
+# Dependencies and framework output
+node_modules/
+.next/
+dist/
+
+# Local Sites, Wrangler, and Vinext runtime state
+.sites-runtime/
+.vinext/
+.wrangler/
+
+# Local configuration and operating-system files
+.env
+.env.*
+!.env.example
+.DS_Store
+*.tsbuildinfo
